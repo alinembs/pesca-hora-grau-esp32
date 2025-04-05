@@ -68,7 +68,7 @@ Interface gráfica para:
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/seu-usuario/seu-repositorio.git
+   git clone https://github.com/alinembs/pesca-hora-grau-esp32.git
 
     ```
 2. Abra o projeto no VSCode com o PlatformIO instalado.
