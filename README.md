@@ -49,7 +49,7 @@ Interface gráfica para:
 
 <div align="center">
   <img src="./data/landing-page.png" width="300px;" alt="Página inicial da Landing Page"/><br>
-  <sub><b>Aline Mariana Barros Silva</b></sub>
+  <sub><b>Pagina Inicial do site</b></sub>
 </div>
 
 ---
