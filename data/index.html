@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="pt">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Monitoramento da Desova do Peixe</title>
+    <script type="text/javascript" src="/jquery-3.7.1.min.js"></script>
+    <style>
+      body {
+        background-color: beige;
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        flex-direction: column;
+      }
+      h2 {
+        font-size: 2rem;
+      }
+      p {
+        font-size: 1.2rem;
+      }
+
+      main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 5vh;
+      }
+
+      .card {
+        background-color: rgb(203, 209, 125);
+
+        display: block;
+        padding: 1%;
+      }
+      .btn {
+        color: rgb(255, 255, 255);
+        background-color: #00aa4d;
+        border: none;
+        outline: none;
+        padding: 7px 20px;
+        border-radius: 8px;
+
+        cursor: pointer;
+        box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px,
+          rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
+      }
+      .bt2 {
+        color: rgb(255, 255, 255);
+        background-color: #3b3b1f;
+        border: none;
+        outline: none;
+        padding: 7px 20px;
+        border-radius: 8px;
+
+        cursor: pointer;
+        box-shadow: rgba(50, 50, 93, 0.25) 0px 13px 27px -5px,
+          rgba(0, 0, 0, 0.3) 0px 8px 16px -8px;
+      }
+      .bt3 {
+        color: rgb(255, 255, 255);
+        background-color: #e4370c;
+        border: none;
+        outline: none;
+        padding: 7px 20px;
+        border-radius: 8px;
+
+        cursor: pointer;
+        box-shadow: rgba(235, 9, 9, 0.25) 0px 13px 27px -5px,
+          rgba(230, 13, 13, 0.3) 0px 8px 16px -8px;
+      }
+      .config {
+        display: flex;
+        justify-content: center;
+        gap: 1vw;
+      }
+      .porc {
+        font-size: 2rem;
+        margin: 5vh;
+      }
+      .falta {
+        font-size: 2rem;
+        margin: 5vh;
+      }
+      .temp {
+        font-size: 2rem;
+        margin: 5vh;
+      }
+      table {
+        background-color: #fdfdb8;
+      }
+      .down {
+        display: flex;
+        gap: 5vw;
+        padding: 1%;
+      }
+
+      @media screen and (max-width: 685px) {
+        .config {
+          display: flex;
+          flex-direction: column;
+          padding-left: 5%;
+          padding-right: 7%;
+        }
+        .card {
+          width: 100%;
+          background-color: rgb(203, 209, 125);
+
+          display: block;
+        }
+        #table {
+          padding: 3%;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Monitor de Tempo para Desova Assistida</h2>
+    <div class="config">
+      <p class="card">
+        <br />Espécie: <input type="text" id="valor_tipo_peixe" />
+        <br />
+        <label id="peixe_t1"></label>
+        <br /><button id="bte1" onclick="Enviar_Tipo_de_Peixe()" class="bt2">
+          Enviar</button
+        ><br />
+      </p>
+      <p class="card">
+        <br />Definição de Hora Grau:
+        <input type="text" id="valor_hora_grau" />
+        <br />
+        <label id="hora_t1" ></label>
+        <br /><button id="bte2" onclick="Enviar_hora_grau()" class="bt2">
+          Enviar</button
+        ><br />
+      </p>
+    </div>
+    <div class="temp">
+      <span> Temperatura Atual:</span>
+      <span id="temperatura_atual"> - ºC</span>
+    </div>
+    <div class="porc">
+      <span> Hora Grau Acumulada:</span>
+      <span id="porcentagem"> - %</span>
+    </div>
+    <div class="falta">
+      <span>Tempo Estimado para extrusão:</span>
+      <span id="faltaquanto">x horas</span>
+    </div>
+    <div class="down">
+      <br />
+      <button
+        onclick="iniciar()"
+        class="btn"
+        id="iniciar"
+        style="display: block"
+      >
+        Iniciar
+      </button>
+      <button onclick="parar()" class="bt3" id="stop" style="display: none">
+        Parar
+      </button>
+      <br />
+      <form action="/" method="post">
+        <button
+          type="submit"
+          name="download"
+          value="download_dados.csv"
+          class="btn"
+        >
+          Download
+        </button>
+      </form>
+    </div>
+    <main>
+      <table id="data-table">
+        <thead>
+          <tr>
+            <th>Medição |</th>
+            <th>Temperatura |</th>
+            <th>Espécie</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </main>
+
+    <script>
+      var hora_grau;
+      var especie;
+      var alerta = false;
+
+      setInterval(updateValues, 1000, "porcentagem");
+      setInterval(updateHoras, 1000, "faltaquanto");
+      setInterval(updateTemp, 1000, "temperatura_atual");
+      setInterval(updateInfo, 1000, "terminou");
+
+      $(document).ready(function () {
+        $.ajax({
+          type: "GET",
+          url: "/dados",
+          dataType: "text",
+          success: function (data) {
+            processData(data);
+          },
+        });
+
+        $.ajax({
+          type: "GET",
+          url: "/hora_grau",
+          success: function (response) {
+            hora_grau = response;
+            document.getElementById("hora_t1").innerHTML = hora_grau;
+          },
+        });
+        $.ajax({
+          type: "GET",
+          url: "/especie",
+          success: function (response) {
+            especie = response;
+            document.getElementById("peixe_t1").innerHTML = especie;
+          },
+        });
+        $.ajax({
+          type: "GET",
+          url: "/start",
+          success: function (response) {
+            if (response == "true") {
+              document.getElementById("iniciar").style.display = "none";
+              document.getElementById("stop").style.display = "block";
+              alert("Monitoramento em Andamento");
+            } else if (response == "false") {
+              document.getElementById("iniciar").style.display = "block";
+              document.getElementById("stop").style.display = "none";
+            }
+          },
+        });
+      });
+
+      function processData(allText) {
+        var allLinesArray = allText.split("\n");
+        if (allLinesArray.length > 0) {
+          for (var i = 0; i < allLinesArray.length; i++) {
+            var row = allLinesArray[i].split(";");
+            addRow(row);
+          }
+        }
+      }
+
+      function addRow(data) {
+        var table = document.getElementById("data-table");
+        var row = table.insertRow(-1);
+        for (var i = 0; i < data.length; i++) {
+          var cell = row.insertCell(i);
+          cell.innerHTML = data[i];
+        }
+      }
+
+      function updateValues(value) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            document.getElementById(value).innerHTML = this.responseText + " %";
+          }
+        };
+        xhttp.open("GET", "/" + value, true);
+        xhttp.send();
+      }
+      function updateHoras(value) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            document.getElementById(value).innerHTML =
+              this.responseText + " horas";
+          }
+        };
+        xhttp.open("GET", "/" + value, true);
+        xhttp.send();
+      }
+      function updateInfo(value) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            if (this.responseText == "true" && alerta == false) {
+              alert("Iniciar Extrusão");
+              alerta = true;
+              document.getElementById("stop").style.display = "none";
+              document.getElementById("iniciar").style.display = "block";
+            }
+          }
+        };
+        xhttp.open("GET", "/" + value, true);
+        xhttp.send();
+      }
+      function updateTemp(value) {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            document.getElementById(value).innerHTML =
+              this.responseText + " ºC";
+          }
+        };
+        xhttp.open("GET", "/" + value, true);
+        xhttp.send();
+      }
+      function Enviar_Tipo_de_Peixe() {
+        var value = document.getElementById("valor_tipo_peixe").value;
+        if (especie == "sem_nome") {
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+              alert("Espécie definida!!");
+              document.getElementById("peixe_t1").style.display = "block";
+              document.getElementById("peixe_t1").innerHTML = value;
+            } else if (this.status == 400) {
+              alert("Erro para Definir");
+            }
+          };
+          xhttp.open("GET", "/tipopeixe?tipo=" + value, true);
+          xhttp.send();
+        } else {
+          alert("A espécie já foi definida!");
+        }
+      }
+      function Enviar_hora_grau() {
+        var value = document.getElementById("valor_hora_grau").value;
+        if (hora_grau == 0) {
+          var xhttp = new XMLHttpRequest();
+          xhttp.onreadystatechange = function () {
+            if (this.readyState == 4 && this.status == 200) {
+              alert("Hora Grau Definido!");
+              document.getElementById("hora_t1").style.display = "block";
+              document.getElementById("hora_t1").innerHTML = value;
+            } else if (this.status == 400) {
+              alert("Erro para Definir");
+            }
+          };
+          xhttp.open("GET", "/definicao_hora_grau?valor=" + value, true);
+          xhttp.send();
+        } else {
+          alert("A hora grau já foi definida!");
+        }
+      }
+
+      function iniciar() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            alert("Iniciando o Monitoramento!");
+            alerta = false;
+            document.getElementById("iniciar").style.display = "none";
+            document.getElementById("stop").style.display = "block";
+          } else if (this.status == 400) {
+            alert("Falta Definir a Hora Grau e/ou Nome da Espécie!");
+          }
+        };
+        xhttp.open("GET", "/iniciar", true);
+        xhttp.send();
+      }
+      function parar() {
+        var xhttp = new XMLHttpRequest();
+        xhttp.onreadystatechange = function () {
+          if (this.readyState == 4 && this.status == 200) {
+            alert("Monitoramento Parado!");
+            document.getElementById("stop").style.display = "none";
+            document.getElementById("iniciar").style.display = "block";
+          } else if (this.status == 400) {
+            alert("Erro no Processo!");
+          }
+        };
+        xhttp.open("GET", "/stop", true);
+        xhttp.send();
+      }
+    </script>
+  </body>
+</html>
