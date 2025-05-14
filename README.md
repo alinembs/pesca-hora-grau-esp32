@@ -115,6 +115,13 @@ Interface gráfica para:
    | (CSV Logs) |
    +-----------+
 ```
+#### Diagrama 
+<div align="center">
+  <img src="./data/diagrama.png" width="300px;" alt="Diagrama do Projeto"/><br>
+  <sub><b>Diagrama do Projeto </b></sub>
+</div>
+
+
 
 ### 👥 Colaboradores
 
